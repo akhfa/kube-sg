@@ -1,0 +1,44 @@
+name: ArgoCD Apply Config
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "argocd/bootstrap/**"
+  workflow_dispatch:
+    inputs:
+      dryrun:
+        description: "Run in dry-run mode only (show changes without applying)"
+        required: false
+        default: false
+        type: boolean
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.34.1"
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+        env:
+          KUBECONFIG: kubeconfig.yaml
+      - name: Show planned changes
+        run: |
+          echo "=== Showing planned changes ==="
+          kubectl diff -k argocd/bootstrap/ || true
+          if [[ "${{ inputs.dryrun }}" == "true" ]]; then
+            echo "=== DRY RUN MODE: No changes will be applied ==="
+          fi
+        env:
+          KUBECONFIG: kubeconfig.yaml
+      - name: Deploy ArgoCD configurations
+        if: ${{ !inputs.dryrun }}
+        run: |
+          kubectl apply -k argocd/bootstrap/
+        env:
+          KUBECONFIG: kubeconfig.yaml
