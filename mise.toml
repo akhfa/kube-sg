@@ -1,0 +1,11 @@
+[settings]
+disable_backends=["asdf"]
+
+[tools]
+argocd = "3"
+helm = "latest"
+k9s = "latest"
+kubectl = "1.34"
+kustomize = "latest"
+node = "24"
+"npm:@anthropic-ai/claude-code" = "latest"
