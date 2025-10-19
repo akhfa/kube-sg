@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  labels:
+    app.kubernetes.io/name: argocd-rbac-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  policy.csv: |
+    g, authentik Admins, role:admin
+
+    g, authentik Users, role:readonly
+
+    p, role:developer, applications, *, */*, allow
+    p, role:developer, repositories, *, *, allow
+    g, argocd-developers, role:developer
+
+    g, AkhfaTestOrganization:DevOps, role:admin
