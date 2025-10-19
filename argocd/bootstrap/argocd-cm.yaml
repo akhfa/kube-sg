@@ -8,7 +8,7 @@ data:
     connectors:
     - config:
         issuer: https://sso.2ak.me/application/o/argocd-sg/
-        clientID: argocd
+        clientID: argocd-sg
         clientSecret: $dex.authentik.clientSecret
         insecureEnableGroups: true
         scopes:
@@ -23,7 +23,7 @@ data:
       id: github
       name: MyGitHub
       config:
-        clientID: Ov23liIPBCPxiEg45rr9
+        clientID: Ov23liZMmi7jIGlZjHFV
         clientSecret: $dex.github.clientSecret
         redirectURI: https://argo.2ak.me/api/dex/callback
         orgs:
