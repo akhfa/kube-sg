@@ -95,6 +95,11 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
+      - name: Replace secrets in argocd-secret.yaml
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !inputs.dryrun }}
+        run: |
+          sed -i "s|DEX_AUTHENTIK_CLIENTSECRET|${{ secrets.DEX_AUTHENTIK_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
+          sed -i "s|DEX_GITHUB_CLIENTSECRET|${{ secrets.DEX_GITHUB_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
       - name: Deploy ArgoCD configurations
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !inputs.dryrun }}
         run: |
