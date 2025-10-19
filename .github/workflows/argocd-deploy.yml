@@ -42,6 +42,8 @@ jobs:
         run: |
           kubectl diff -k argocd/bootstrap/ > diff_output.txt || true
 
+          cat diff_output.txt
+
           if [[ "${{ inputs.dryrun }}" == "true" ]]; then
             echo "=== DRY RUN MODE: No changes will be applied ==="
           fi
