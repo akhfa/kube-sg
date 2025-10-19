@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+data:
+  url: https://argo.2ak.me
+  dex.config: |
+    connectors:
+    - config:
+        issuer: https://sso.2ak.me/application/o/argocd-sg/
+        clientID: argocd
+        clientSecret: $dex.authentik.clientSecret
+        insecureEnableGroups: true
+        scopes:
+        - openid
+        - profile
+        - email
+        - groups
+      name: MySSO
+      type: oidc
+      id: authentik
+    - type: github
+      id: github
+      name: MyGitHub
+      config:
+        clientID: Ov23liIPBCPxiEg45rr9
+        clientSecret: $dex.github.clientSecret
+        redirectURI: https://argo.2ak.me/api/dex/callback
+        orgs:
+        - name: AkhfaTestOrganization
+  resource.exclusions: |
+    - apiGroups:
+      - cilium.io
+      kinds:
+      - CiliumIdentity
+      clusters:
+      - "*"

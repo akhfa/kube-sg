@@ -33,22 +33,21 @@ jobs:
           echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
         env:
           KUBECONFIG: kubeconfig.yaml
-      - name: Show planned changes
+      - name: Replace secrets in argocd-secret.yaml
+        run: |
+          sed -i "s|DEX_AUTHENTIK_CLIENTSECRET|${{ secrets.DEX_AUTHENTIK_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
+          sed -i "s|DEX_GITHUB_CLIENTSECRET|${{ secrets.DEX_GITHUB_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
+      - name: Generate planned changes
         id: diff
         run: |
-          echo "=== Showing planned changes ==="
-          DIFF_OUTPUT=$(kubectl diff -k argocd/bootstrap/ 2>&1 || true)
-          echo "$DIFF_OUTPUT"
-
-          # Save diff output to file for PR comment
-          echo "$DIFF_OUTPUT" > diff_output.txt
+          kubectl diff -k argocd/bootstrap/ > diff_output.txt || true
 
           if [[ "${{ inputs.dryrun }}" == "true" ]]; then
             echo "=== DRY RUN MODE: No changes will be applied ==="
           fi
         env:
           KUBECONFIG: kubeconfig.yaml
-      - name: Delete all previous bot comments
+      - name: Minimize all previous bot comments
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
@@ -65,11 +64,13 @@ jobs:
             );
 
             for (const comment of botComments) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: comment.id,
-              });
+              await github.graphql(`
+                mutation {
+                  minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
+                    clientMutationId
+                  }
+                }
+              `);
             }
       - name: Post diff as PR comment
         if: github.event_name == 'pull_request'
@@ -89,6 +90,11 @@ jobs:
 
             commentBody += '\n---\n*Automated comment by ArgoCD Deploy workflow*';
 
+            if (commentBody.length > 10000) {
+              console.log(`Comment body exceeds 10,000 characters (${commentBody.length}). Skipping PR comment.`);
+              commentBody = '## ArgoCD Planned Changes\n\n**Diff output is too large to display** (exceeds 10,000 characters).\n\nPlease run `kubectl diff -k argocd/bootstrap/` locally to review the changes.\n\n---\n*Automated comment by ArgoCD Deploy workflow*';
+            }
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -101,3 +107,6 @@ jobs:
           kubectl apply -k argocd/bootstrap/
         env:
           KUBECONFIG: kubeconfig.yaml
+      - name: Delete kubeconfig file
+        run: |
+          rm -f kubeconfig.yaml
