@@ -36,23 +36,18 @@ jobs:
       - name: Replace secrets in argocd-secret.yaml
         run: |
           sed -i "s|DEX_AUTHENTIK_CLIENTSECRET|${{ secrets.DEX_AUTHENTIK_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
-          # sed -i "s|DEX_GITHUB_CLIENTSECRET|${{ secrets.DEX_GITHUB_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
-      - name: Show planned changes
+          sed -i "s|DEX_GITHUB_CLIENTSECRET|${{ secrets.DEX_GITHUB_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
+      - name: Generate planned changes
         id: diff
         run: |
-          echo "=== Showing planned changes ==="
-          DIFF_OUTPUT=$(kubectl diff -k argocd/bootstrap/ 2>&1 || true)
-          echo "$DIFF_OUTPUT"
-
-          # Save diff output to file for PR comment
-          echo "$DIFF_OUTPUT" > diff_output.txt
+          kubectl diff -k argocd/bootstrap/ > diff_output.txt || true
 
           if [[ "${{ inputs.dryrun }}" == "true" ]]; then
             echo "=== DRY RUN MODE: No changes will be applied ==="
           fi
         env:
           KUBECONFIG: kubeconfig.yaml
-      - name: Delete all previous bot comments
+      - name: Minimize all previous bot comments
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
@@ -69,11 +64,13 @@ jobs:
             );
 
             for (const comment of botComments) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: comment.id,
-              });
+              await github.graphql(`
+                mutation {
+                  minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
+                    clientMutationId
+                  }
+                }
+              `);
             }
       - name: Post diff as PR comment
         if: github.event_name == 'pull_request'
