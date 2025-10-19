@@ -106,3 +106,6 @@ jobs:
           kubectl apply -k argocd/bootstrap/
         env:
           KUBECONFIG: kubeconfig.yaml
+      - name: Delete kubeconfig file
+        run: |
+          rm -f kubeconfig.yaml
