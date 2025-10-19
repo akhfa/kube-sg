@@ -33,6 +33,10 @@ jobs:
           echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
         env:
           KUBECONFIG: kubeconfig.yaml
+      - name: Replace secrets in argocd-secret.yaml
+        run: |
+          sed -i "s|DEX_AUTHENTIK_CLIENTSECRET|${{ secrets.DEX_AUTHENTIK_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
+          # sed -i "s|DEX_GITHUB_CLIENTSECRET|${{ secrets.DEX_GITHUB_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
       - name: Show planned changes
         id: diff
         run: |
@@ -89,17 +93,17 @@ jobs:
 
             commentBody += '\n---\n*Automated comment by ArgoCD Deploy workflow*';
 
+            if (commentBody.length > 10000) {
+              console.log(`Comment body exceeds 10,000 characters (${commentBody.length}). Skipping PR comment.`);
+              commentBody = '## ArgoCD Planned Changes\n\n**Diff output is too large to display** (exceeds 10,000 characters).\n\nPlease run `kubectl diff -k argocd/bootstrap/` locally to review the changes.\n\n---\n*Automated comment by ArgoCD Deploy workflow*';
+            }
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: commentBody
             });
-      - name: Replace secrets in argocd-secret.yaml
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !inputs.dryrun }}
-        run: |
-          sed -i "s|DEX_AUTHENTIK_CLIENTSECRET|${{ secrets.DEX_AUTHENTIK_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
-          sed -i "s|DEX_GITHUB_CLIENTSECRET|${{ secrets.DEX_GITHUB_CLIENTSECRET }}|g" argocd/bootstrap/argocd-secret.yaml
       - name: Deploy ArgoCD configurations
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !inputs.dryrun }}
         run: |
