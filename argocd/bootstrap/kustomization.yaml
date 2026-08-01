@@ -4,7 +4,7 @@ namespace: argocd
 resources:
   - ./ingressroute.yaml
   - ./namespace.yaml
-  - https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/v3.1.9/manifests/install.yaml
+  - https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/v3.4.6/manifests/install.yaml
 patches:
   - path: argocd-cmd-params-cm.yaml
     target:
