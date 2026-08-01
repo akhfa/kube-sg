@@ -40,7 +40,7 @@ jobs:
       - name: Generate planned changes
         id: diff
         run: |
-          kubectl diff -k argocd/bootstrap/ > diff_output.txt || true
+          kubectl diff --server-side --force-conflicts -k argocd/bootstrap/ > diff_output.txt || true
 
           cat diff_output.txt
 
@@ -106,7 +106,7 @@ jobs:
       - name: Deploy ArgoCD configurations
         if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dryrun)) }}
         run: |
-          kubectl apply -k argocd/bootstrap/
+          kubectl apply --server-side --force-conflicts -k argocd/bootstrap/
         env:
           KUBECONFIG: kubeconfig.yaml
       - name: Delete kubeconfig file
